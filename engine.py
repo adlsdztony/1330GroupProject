@@ -3,7 +3,6 @@ import time
 import threading
 import copy
 from random import randint
-from tkinter import W
 
 from config import *
 
