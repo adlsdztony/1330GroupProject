@@ -26,7 +26,7 @@ class Game:
         while self.in_game:
             self.map_.show()
             time.sleep(1/self.fps)
-            os.system('clear')
+            os.system('cls' if os.name == 'nt' else 'clear')
         print('Bye!')
     
     def start_game(self):
