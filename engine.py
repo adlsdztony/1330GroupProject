@@ -2,9 +2,9 @@ import os
 import time
 import threading
 import copy
-from random import randint
 
 from config import *
+from monster_functions import *
 
 class Game:
     def __init__(self, init_map, fps=FPS):
@@ -12,66 +12,83 @@ class Game:
         self.in_game = True
         self.fps = fps
         self.t = None
-        self.dead = False
+        self.state = None
     
-    def update(self, input_):
-        if input_ == 'w':
-            self.map_.player_move([0, -1])
-        elif input_ == 'a':
-            self.map_.player_move([-1, 0])
-        elif input_ == 's':
-            self.map_.player_move([0, 1])
-        elif input_ == 'd':
-            self.map_.player_move([1, 0])
+    def player_update(self, input_):
+        if input_ in MOVE_DICT.keys():
+            if self.map_.player_move(MOVE_DICT[input_]):
+                self.in_game = False
+                self.state = 'win'
     
     def main_thread(self):
         while self.in_game:
-            state = self.map_.show()
+            state = self.map_.UpdateAndShow()
             if not state:
-                self.dead = True
+                self.state = 'dead'
                 self.in_game = False
             time.sleep(1/self.fps)
             os.system('cls' if os.name == 'nt' else 'clear')
-        if self.dead:
-            print('You dead!')
-        print('Bye!')
+        if self.state is not None:
+            self.map_.ShowMap()
+            print(f'You {self.state}!')
+            input('press "Enter" to contiune')
+            os.system('cls' if os.name == 'nt' else 'clear')
+            
+        # print('Bye!')
     
     def start_game(self):
         self.t = threading.Thread(target=self.main_thread)
         self.t.start()
         while self.in_game == True:
             a = input()
+            if a is None:
+                continue
             if a == 'E':
                 self.in_game = False
                 break
-            self.update(a)
+            self.player_update(a[-1])
+        self.t.join()
+        return self.state
 
 class Map:
-    def __init__(self, row, col):
-        self.row = row
-        self.col = col
-        self.map_ = [['#' for i in range(col+2)]]
-        for r in range(row):
-            self.map_.append(list('#'+' '*col+'#'))
-        self.map_.append(['#' for i in range(col+2)])
+    def __init__(self, init_map, default_func=CatchOrRandom):
         self.player = None
         self.agent_list = []
+        self.map_ = [list(i) for i in init_map]
+        self.row = len(init_map)-2
+        self.col = len(init_map[0])-2
+        self.default_func = default_func
+        for rn, row in enumerate(self.map_):
+            for cn, col in enumerate(row):
+                if col == 'P':
+                    self.add_player([cn, rn])
+                    self.map_[rn][cn] = ' '
+                if col in MONSTERS.keys():
+                    self.add_monster([cn, rn], func=MONSTERS[col])
+                    self.map_[rn][cn] = ' '
         self.count = 0
 
     def add_player(self, posi):
         if self.is_valid(posi): 
             self.player = agent('P', posi)
     
-    def add_monster(self, posi):
+    def add_monster(self, posi, func=None):
         if self.is_valid(posi):
-            self.agent_list.append(agent('M', posi))
+            self.agent_list.append(agent('M', posi, self.default_func if func is None else func))
     
     def add_block(self, posi):
         if self.is_valid(posi):
             self.map_[posi[1]][posi[0]] = '#'
     
+    def is_validp(self, posi):
+        if posi[0] <= self.col+1 and posi[1] <= self.row+1:
+            if self.map_[posi[1]][posi[0]] != '#':
+                return True
+            else:
+                return False
+    
     def is_valid(self, posi):
-        if posi[0] <= self.col and posi[1] <= self.row:
+        if posi[0] <= self.col and posi[1] <= self.row and posi[0] > 0 and posi[1] > 0:
             if self.map_[posi[1]][posi[0]] != '#':
                 return True
             else:
@@ -81,10 +98,14 @@ class Map:
         if ag is None:
             ag = self.player
         new_posi = [ag.posi[0]+direction[0], ag.posi[1]+direction[1]]
-        if self.is_valid(new_posi):
+        if self.is_validp(new_posi):
             ag.posi = new_posi
+        for p in ag.posi:
+            if p > self.row or p > self.col or p == 0:
+                return True
+        return False
         
-    
+        
     def map_now(self):
         temp_map = copy.deepcopy(self.map_)
         temp_map[self.player.posi[1]][self.player.posi[0]] = 'P'
@@ -92,38 +113,59 @@ class Map:
             temp_map[ag.posi[1]][ag.posi[0]] = ag.name
         return temp_map
     
+    def get_around(self, ag):
+        map_now = self.map_now()
+        posi = ag.posi
+        # around = [[self.map_[posi[1]-1][posi[0]-1], self.map_[posi[1]-1][posi[0]], self.map_[posi[1]-1][posi[0]+1]],
+        #           [self.map_[posi[1]][posi[0]-1], self.map_[posi[1]][posi[0]], self.map_[posi[1]][posi[0]+1]],
+        #           [self.map_[posi[1]+1][posi[0]-1], self.map_[posi[1]+1][posi[0]], self.map_[posi[1]+1][posi[0]+1]]]
+        around = [[map_now[posi[1]+i][posi[0]+j] for j in range(-1, 2)] for i in range(-1, 2)]
+        return around
+    
     def ag_move(self):
         for ag in self.agent_list:
-            new_posi = ag.random_move()
+            new_posi = ag.move(self.get_around(ag), self.count)
             if self.is_valid(new_posi):
                 ag.posi = new_posi
+    
+    def ShowMap(self):
+        for row in self.map_now():
+            print(' '.join(row))
 
-    def show(self):
+    def UpdateAndShow(self):
         self.count += 1
-        if self.count % FPS == 0:
-            self.ag_move()
+        self.ag_move()
         for ag in self.agent_list:
             if ag.name == 'M':
                 if ag.posi == self.player.posi:
                     return False
-        for row in self.map_now():
-            print(' '.join(row))
+        # for row in self.map_now():
+        #     print(' '.join(row))
+        self.ShowMap()
         return True
 
+
 class agent:
-    def __init__(self, name, init_posi):
+    def __init__(self, name, init_posi, mov_func=CatchOrRandom):
         self.posi = init_posi
         self.name = name
+        self.mov_func = mov_func
     
-    def random_move(self):
-        return [self.posi[0]+randint(-1, 1), self.posi[1]+randint(-1, 1)]
+    def move(self, around, state):
+        m = self.mov_func(around, state)
+        return [self.posi[i] + m[i] for i in [0, 1]]
 
 if __name__ == '__main__':
-    b = Map(5, 5)
-    b.add_player([2, 2])
-    b.add_monster([2, 3])
-    b.add_monster([3, 3])
-    b.add_block([3, 4])
+    map_ = [
+        '#### ##',
+        '#P    #',
+        '#     #',
+        '#     #',
+        '#     #',
+        '    M  ',
+        '# #####'
+        ]
+    b = Map(map_)
 
     game = Game(b)
     game.start_game()
