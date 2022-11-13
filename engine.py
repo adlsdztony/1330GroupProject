@@ -6,6 +6,24 @@ import copy
 from config import *
 from monster_functions import *
 
+clear = 'cls' if os.name == 'nt' else 'clear'
+
+def getchar():
+    ch = ''
+    try:
+        import msvcrt
+        ch = msvcrt.getch()
+    except:
+        import tty, termios, sys
+        fd = sys.stdin.fileno()
+        old_settings = termios.tcgetattr(fd)
+        try:
+            tty.setraw(sys.stdin.fileno())
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return ch
+
 class Game:
     def __init__(self, init_map, fps=FPS):
         self.map_ = init_map
@@ -27,26 +45,22 @@ class Game:
                 self.state = 'dead'
                 self.in_game = False
             time.sleep(1/self.fps)
-            os.system('cls' if os.name == 'nt' else 'clear')
+            os.system(clear)
         if self.state is not None:
             self.map_.ShowMap()
             print(f'You {self.state}!')
-            input('press "Enter" to contiune')
-            os.system('cls' if os.name == 'nt' else 'clear')
-            
-        # print('Bye!')
+            print('press any keys to contiune')
     
     def start_game(self):
         self.t = threading.Thread(target=self.main_thread)
         self.t.start()
         while self.in_game == True:
-            a = input()
-            if a is None:
-                continue
+            a = chr(ord(getchar()))
             if a == 'E':
                 self.in_game = False
+                self.state = 'exit'
                 break
-            self.player_update(a[-1])
+            self.player_update(a)
         self.t.join()
         return self.state
 
@@ -64,7 +78,7 @@ class Map:
                     self.add_player([cn, rn])
                     self.map_[rn][cn] = ' '
                 if col in MONSTERS.keys():
-                    self.add_monster([cn, rn], func=MONSTERS[col])
+                    self.add_monster([cn, rn], func=MONSTERS[col],name=col if SHOW_TYPE_OF_MONSTER else 'M')
                     self.map_[rn][cn] = ' '
         self.count = 0
 
@@ -72,9 +86,9 @@ class Map:
         if self.is_valid(posi): 
             self.player = agent('P', posi)
     
-    def add_monster(self, posi, func=None):
+    def add_monster(self, posi, func=None, name='M'):
         if self.is_valid(posi):
-            self.agent_list.append(agent('M', posi, self.default_func if func is None else func))
+            self.agent_list.append(agent(name, posi, self.default_func if func is None else func))
     
     def add_block(self, posi):
         if self.is_valid(posi):
@@ -100,11 +114,9 @@ class Map:
         new_posi = [ag.posi[0]+direction[0], ag.posi[1]+direction[1]]
         if self.is_validp(new_posi):
             ag.posi = new_posi
-        for p in ag.posi:
-            if p > self.row or p > self.col or p == 0:
-                return True
+        if ag.posi[1] > self.row or ag.posi[0] > self.col or ag.posi[0] == 0 or ag.posi[1] == 0:
+            return True
         return False
-        
         
     def map_now(self):
         temp_map = copy.deepcopy(self.map_)
@@ -116,9 +128,6 @@ class Map:
     def get_around(self, ag):
         map_now = self.map_now()
         posi = ag.posi
-        # around = [[self.map_[posi[1]-1][posi[0]-1], self.map_[posi[1]-1][posi[0]], self.map_[posi[1]-1][posi[0]+1]],
-        #           [self.map_[posi[1]][posi[0]-1], self.map_[posi[1]][posi[0]], self.map_[posi[1]][posi[0]+1]],
-        #           [self.map_[posi[1]+1][posi[0]-1], self.map_[posi[1]+1][posi[0]], self.map_[posi[1]+1][posi[0]+1]]]
         around = [[map_now[posi[1]+i][posi[0]+j] for j in range(-1, 2)] for i in range(-1, 2)]
         return around
     
@@ -136,14 +145,10 @@ class Map:
         self.count += 1
         self.ag_move()
         for ag in self.agent_list:
-            if ag.name == 'M':
-                if ag.posi == self.player.posi:
-                    return False
-        # for row in self.map_now():
-        #     print(' '.join(row))
+            if ag.posi == self.player.posi:
+                return False
         self.ShowMap()
         return True
-
 
 class agent:
     def __init__(self, name, init_posi, mov_func=CatchOrRandom):
@@ -155,6 +160,7 @@ class agent:
         m = self.mov_func(around, state)
         return [self.posi[i] + m[i] for i in [0, 1]]
 
+
 if __name__ == '__main__':
     map_ = [
         '#### ##',
@@ -163,7 +169,8 @@ if __name__ == '__main__':
         '#     #',
         '#     #',
         '    M  ',
-        '# #####'
+        '# #####',
+        '#     #'
         ]
     b = Map(map_)
 
