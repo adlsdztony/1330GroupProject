@@ -4,9 +4,13 @@ Quick start:
 
     Control:
         'P' is the player
-        Press  'w / a / s / d' to move up / left / down / right 
-        Press 'E' to exit
-    
+        Press  'w / a / s / d + Enter' to move up / left / down / right 
+        Press 'E + Enter' to exit
+
+        ('keyboard' package is not supported on Ed so we use input() instead
+        It's the reason why you need press 'Enter' after every command)
+        **It is recommended to download all files to run locally(windows) for the best experience.**
+
     Goal:
         Escape from the dungeon (the gap in the wall)
         Do not caught by the monster 'M'

@@ -9,19 +9,12 @@ from monster_functions import *
 clear = 'cls' if os.name == 'nt' else 'clear'
 
 def getchar():
-    ch = ''
-    try:
+    if os.name == 'nt':
         import msvcrt
         ch = msvcrt.getch()
-    except:
-        import tty, termios, sys
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+        return chr(ord(ch))
+    else:
+        ch = input()
     return ch
 
 class Game:
@@ -49,19 +42,20 @@ class Game:
         if self.state is not None:
             self.map_.ShowMap()
             print(f'You {self.state}!')
-            print('press any keys to contiune')
+            print('press "Enter" to contiune')
     
     def start_game(self):
         self.t = threading.Thread(target=self.main_thread)
         self.t.start()
         while self.in_game == True:
-            a = chr(ord(getchar()))
+            a = getchar()
             if a == 'E':
                 self.in_game = False
                 self.state = 'exit'
                 break
             self.player_update(a)
         self.t.join()
+        getchar()
         return self.state
 
 class Map:

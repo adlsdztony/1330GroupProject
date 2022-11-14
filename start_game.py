@@ -9,8 +9,8 @@ def levels():
         os.system(clear)
         print(n)
         g.map_.ShowMap()
-        print('press any keys to start\n"E" to exit\n')
-        choice = chr(ord(getchar()))
+        print('press "Enter" to start\n"E + Enter" to exit')
+        choice = getchar()
         if choice == 'E':
             return 'exit'
         state = g.start_game()
@@ -28,14 +28,14 @@ def print_help():
             if 'Enjoy' in line:
                 break
         print('(read more in readme.txt)')
-    print('press any keys to continue')
+    print('press "Enter" to continue')
     getchar()
 
 
 while True:
     os.system(clear)
-    print(f'Speed now: {MONSTER_SPEED[0]}\n1. press any keys to start\n2. press "H" to read help\n3. press "E" to exit\n')
-    choice = chr(ord(getchar()))
+    print(f'Speed now: {MONSTER_SPEED[0]}\n1. press "Enter" to start\n2. press "H + Enter" to read help\n3. press "E + Enter" to exit\n')
+    choice = getchar()
     if choice == 'E':
         break
     if choice == 'H':
