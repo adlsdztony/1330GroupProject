@@ -1,3 +1,4 @@
+group project for ENGG1330 (2022 sem1)
 Quick start:
     **remember to enlarge the terminal**
     Run 'start_game.py' to start
