@@ -1,6 +1,6 @@
 # group project for ENGG1330 (2022/23 sem1)
 
-Quick start:
+## Quick start:
     Run 'start_game.py' to start
 
     Control:
@@ -28,7 +28,7 @@ Quick start:
     Enjoy!!!
 
 
-Development:
+## Development:
     DIY your own games!
 
     Config:
