@@ -1,6 +1,6 @@
-group project for ENGG1330 (2022 sem1)
+# group project for ENGG1330 (2022/23 sem1)
+
 Quick start:
-    **remember to enlarge the terminal**
     Run 'start_game.py' to start
 
     Control:
@@ -29,7 +29,7 @@ Quick start:
 
 
 Development:
-    **DIY your own games!**
+    DIY your own games!
 
     Config:
         1. FPS: Frame Per Second
