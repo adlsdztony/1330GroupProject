@@ -38,7 +38,6 @@ class Game:
                 self.state = 'dead'
                 self.in_game = False
             time.sleep(1/self.fps)
-            os.system(clear)
         if self.state is not None:
             self.map_.ShowMap()
             print(f'You {self.state}!')
@@ -47,6 +46,8 @@ class Game:
     def start_game(self):
         self.t = threading.Thread(target=self.main_thread)
         self.t.start()
+        os.system(clear)
+        print('\033[?25l', end='')
         while self.in_game == True:
             a = getchar()
             if a == 'E':
@@ -132,6 +133,7 @@ class Map:
                 ag.posi = new_posi
     
     def ShowMap(self):
+        print('\033[0;0H', end='')
         for row in self.map_now():
             print(' '.join(row))
 
